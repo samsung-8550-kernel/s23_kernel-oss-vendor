@@ -2749,15 +2749,6 @@ int cam_sensor_util_power_down(struct cam_sensor_power_ctrl_t *ctrl,
 
 
 #if defined(CONFIG_SAMSUNG_DEBUG_SENSOR_I2C)
-enum {
-	e_vc_addr_260_264,
-	e_vc_addr_110_264,
-	e_vc_addr_110_30b0,
-	e_vc_addr_602a_6f12,
-	e_vc_addr_invalid,
-	e_vc_addr_max = e_vc_addr_invalid,
-};
-
 struct st_vc_addr {
 	uint32_t img_addr;
 	uint32_t pd_addr;
@@ -2815,7 +2806,7 @@ struct st_sensordbg_addr {
 const uint32_t reg_addr_aeb_on = 0xe00;
 const uint32_t fcm_idx_addr = 0x0B30;
 
-inline e_seq_sensor_idnum get_seq_sen_id(uint32_t sensor_id)
+inline e_seq_sensor_idnum get_seq_sensor_id(uint32_t sensor_id)
 {
 	e_seq_sensor_idnum ret;
 	switch (sensor_id)
@@ -2889,7 +2880,7 @@ void cam_sensor_parse_reg(
 		CAM_DBG(CAM_SENSOR, "invalid vc_pick_idx");
 		return;
 	}
-	seq_sen_id = get_seq_sen_id(s_ctrl->sensordata->slave_info.sensor_id);
+	seq_sen_id = get_seq_sensor_id(s_ctrl->sensordata->slave_info.sensor_id);
 
 	if ((seq_sen_id == e_seq_sensor_idn_s5khp2) ||
 		(seq_sen_id == e_seq_sensor_idn_s5kgn3)) {
@@ -2919,11 +2910,11 @@ void cam_sensor_parse_reg(
 }
 
 
-bool cam_sensor_check_aeb_on(struct cam_sensor_ctrl_t* s_ctrl)
+int cam_sensor_check_aeb_on(struct cam_sensor_ctrl_t* s_ctrl)
 {
 	int	rc = 0;
 	uint32_t reg_addr_aeb_ctrl = 0xe00;
-	bool is_aeb_activated = false;
+	int is_aeb_activated = false;
 	uint32_t val_aeb_ctrl = 0;
 	struct cam_camera_slave_info* slave_info;
 
@@ -2932,7 +2923,7 @@ bool cam_sensor_check_aeb_on(struct cam_sensor_ctrl_t* s_ctrl)
 	if (!slave_info) {
 		CAM_ERR(CAM_SENSOR,	" failed: %pK",
 			slave_info);
-		return false;
+		return SENSOR_API_EINVALID;
 	}
 	if(SENSOR_ID_S5K2LD == s_ctrl->sensordata->slave_info.sensor_id) {
 		reg_addr_aeb_ctrl = 0xe0a;
@@ -2945,26 +2936,27 @@ bool cam_sensor_check_aeb_on(struct cam_sensor_ctrl_t* s_ctrl)
 		CAMERA_SENSOR_I2C_TYPE_WORD, false);
 	if (rc < 0) {
 		CAM_ERR(CAM_SENSOR, "Failed to read 0x%x", reg_addr_aeb_ctrl);
+		return SENSOR_API_EINVALID;
 	}
 
 	switch (s_ctrl->sensordata->slave_info.sensor_id)
 	{
 	case SENSOR_ID_S5KHP2:
-		is_aeb_activated = ((val_aeb_ctrl & 0xf) == 0x3) ? true : false;
+		is_aeb_activated = ((val_aeb_ctrl & 0xf) == 0x3) ? SENSOR_API_RESULT_AEB_ON : SENSOR_API_RESULT_AEB_OFF;
 		break;
 	case SENSOR_ID_S5KGN3:
 	case SENSOR_ID_S5K3LU:
-		is_aeb_activated = ((val_aeb_ctrl & 0x0f00) == 0x200) ? true : false;
+		is_aeb_activated = ((val_aeb_ctrl & 0x0f00) == 0x200) ? SENSOR_API_RESULT_AEB_ON : SENSOR_API_RESULT_AEB_OFF;
 		break;
 	case SENSOR_ID_IMX564:
 	case SENSOR_ID_IMX754:
-		is_aeb_activated = ((val_aeb_ctrl & 0x0f00) == 0x200) ? true : false;
+		is_aeb_activated = ((val_aeb_ctrl & 0x0f00) == 0x200) ? SENSOR_API_RESULT_AEB_ON : SENSOR_API_RESULT_AEB_OFF;
 		break;
 	case SENSOR_ID_S5K3K1:
-		is_aeb_activated = ((val_aeb_ctrl & 0x0f00) == 0x200) ? true : false;
+		is_aeb_activated = ((val_aeb_ctrl & 0x0f00) == 0x200) ? SENSOR_API_RESULT_AEB_ON : SENSOR_API_RESULT_AEB_OFF;
 		break;
 	case SENSOR_ID_S5K2LD:
-		is_aeb_activated = ((val_aeb_ctrl & 0xf) == 0x2) ? true : false;
+		is_aeb_activated = ((val_aeb_ctrl & 0xf) == 0x2) ? SENSOR_API_RESULT_AEB_ON : SENSOR_API_RESULT_AEB_OFF;
 		break;
 	default:
 		break;
@@ -2983,10 +2975,10 @@ void cam_sensor_dbg_print_vc(struct cam_sensor_ctrl_t* s_ctrl)
 	int	rc = 0;
 	uint32_t vc_img	= 0, vc_pd_h = 0, vc_pd_v = 0;
 	uint32_t vc_pick_idx = e_vc_addr_invalid;
-	bool is_aeb_activated = false;
+	int is_aeb_activated = -1;
 	bool is_fcm_debugging = false;
 	uint32_t fcm_idx = 0;
-	uint32_t seq_sen_id = get_seq_sen_id(s_ctrl->sensordata->slave_info.sensor_id);
+	uint32_t seq_sen_id = get_seq_sensor_id(s_ctrl->sensordata->slave_info.sensor_id);
 
 	struct cam_camera_slave_info* slave_info;
 
@@ -3024,8 +3016,10 @@ void cam_sensor_dbg_print_vc(struct cam_sensor_ctrl_t* s_ctrl)
 	}
 
 	is_aeb_activated = cam_sensor_check_aeb_on(s_ctrl);
+	if (is_aeb_activated < 0)
+		return;
 
-	if (is_aeb_activated)
+	if (SENSOR_API_RESULT_AEB_ON == is_aeb_activated)
 	{
 		uint32_t vc_l = 0, vc_s = 0;
 
@@ -3111,7 +3105,7 @@ void cam_sensor_dbg_exp_violation(struct cam_sensor_ctrl_t* s_ctrl)
 {
 	 int rc = 0;
 	 bool is_aeb_activated = false;
-	uint32_t seq_sen_id = get_seq_sen_id(s_ctrl->sensordata->slave_info.sensor_id);
+	uint32_t seq_sen_id = get_seq_sensor_id(s_ctrl->sensordata->slave_info.sensor_id);
 
 	struct cam_camera_slave_info* slave_info;
 

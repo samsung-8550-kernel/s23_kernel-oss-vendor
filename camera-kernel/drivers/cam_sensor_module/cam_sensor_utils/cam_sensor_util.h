@@ -37,6 +37,10 @@
 
 #define SENSOR_ID_HI847_HI1337 0x2000  // HI847 and HI1337 have same sensor id.
 
+#define SENSOR_API_EINVALID (-1)
+#define SENSOR_API_RESULT_AEB_OFF (0)
+#define SENSOR_API_RESULT_AEB_ON (1)
+
 #if defined(CONFIG_CAMERA_ADAPTIVE_MIPI) || defined(CONFIG_SEC_GTS9_PROJECT) || defined(CONFIG_SEC_GTS9P_PROJECT) || defined(CONFIG_SEC_GTS9U_PROJECT)
 #define SENSOR_ID_S5KGN3 0x08E3
 #define SENSOR_ID_S5K3K1 0x30B1
@@ -74,6 +78,15 @@ enum sensor_retention_mode {
 #endif
 
 #if defined(CONFIG_SAMSUNG_DEBUG_SENSOR_I2C)
+enum {
+	e_vc_addr_260_264,
+	e_vc_addr_110_264,
+	e_vc_addr_110_30b0,
+	e_vc_addr_602a_6f12,
+	e_vc_addr_invalid,
+	e_vc_addr_max = e_vc_addr_invalid,
+};
+
 extern int to_dump_when_sof_freeze__sen_id;
 
 typedef enum {
@@ -161,5 +174,7 @@ static inline int cam_sensor_util_aon_registration(uint32_t phy_idx, uint8_t aon
 	CAM_DBG(CAM_SENSOR, "Register phy_idx: %u for AON_Camera_ID: %d", phy_idx, aon_camera_id);
 	return cam_csiphy_util_update_aon_registration(phy_idx, aon_camera_id);
 }
+
+e_seq_sensor_idnum get_seq_sensor_id(uint32_t sensor_id);
 
 #endif /* _CAM_SENSOR_UTIL_H_ */

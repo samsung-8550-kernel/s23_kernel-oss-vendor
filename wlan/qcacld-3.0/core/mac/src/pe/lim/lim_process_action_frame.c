@@ -56,6 +56,7 @@
 #include "son_api.h"
 #include "wlan_t2lm_api.h"
 #include "wlan_mlo_mgr_public_structs.h"
+#include "sir_mac_prot_def.h"
 
 #define SA_QUERY_REQ_MIN_LEN \
 (DOT11F_FF_CATEGORY_LEN + DOT11F_FF_ACTION_LEN + DOT11F_FF_TRANSACTIONID_LEN)
@@ -67,7 +68,6 @@
 #define OCI_IE_OUI_SIZE 1
 #define OCI_IE_OP_CLS_OFFSET 3
 #define ELE_ID_EXT_LEN 1
-#define SIR_MAC_IE_LEN_OFFSET 1
 
 static last_processed_msg rrm_link_action_frm;
 
@@ -2178,7 +2178,8 @@ void lim_process_action_frame(struct mac_context *mac_ctx,
 			if (wlan_t2lm_deliver_event(
 				session->vdev, peer,
 				WLAN_T2LM_EV_ACTION_FRAME_RX_REQ,
-				(void *)body_ptr, &token) == QDF_STATUS_SUCCESS)
+				(void *)body_ptr, frame_len,
+				&token) == QDF_STATUS_SUCCESS)
 				status_code = WLAN_T2LM_RESP_TYPE_SUCCESS;
 			else
 				status_code =
@@ -2197,13 +2198,13 @@ void lim_process_action_frame(struct mac_context *mac_ctx,
 			wlan_t2lm_deliver_event(
 					session->vdev, peer,
 					WLAN_T2LM_EV_ACTION_FRAME_RX_RESP,
-					(void *)rx_pkt_info, &token);
+					(void *)body_ptr, frame_len, &token);
 			break;
 		case EHT_T2LM_TEARDOWN:
 			wlan_t2lm_deliver_event(
 					session->vdev, peer,
 					WLAN_T2LM_EV_ACTION_FRAME_RX_TEARDOWN,
-					(void *)rx_pkt_info, NULL);
+					(void *)body_ptr, frame_len, NULL);
 			break;
 		default:
 			pe_err("Unhandled T2LM action frame");

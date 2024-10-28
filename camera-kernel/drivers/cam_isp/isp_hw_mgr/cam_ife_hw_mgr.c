@@ -44,6 +44,10 @@
 
 #define MAX_INTERNAL_RECOVERY_ATTEMPTS    1
 
+#if defined(CONFIG_SAMSUNG_CAMERA_WA_FIX)
+#define MAX_INTERNAL_RECOVERY_ATTEMPT_FOR_FATAL_SENSOR_SWITCHING (2)
+#endif
+
 #define CAM_ISP_NON_RECOVERABLE_CSID_ERRORS          \
 	(CAM_ISP_HW_ERROR_CSID_LANE_FIFO_OVERFLOW    |   \
 	 CAM_ISP_HW_ERROR_CSID_PKT_HDR_CORRUPTED     |   \
@@ -13105,7 +13109,13 @@ static int cam_ife_hw_mgr_handle_csid_error(
 
 	if (recoverable && (is_bus_overflow ||
 		(err_type & CAM_ISP_RECOVERABLE_CSID_ERRORS))) {
+#if defined(CONFIG_SAMSUNG_CAMERA_WA_FIX)
+		uint32_t max_recovery_cnt = (err_type & CAM_ISP_HW_ERROR_CSID_SENSOR_SWITCH_ERROR) ?
+			MAX_INTERNAL_RECOVERY_ATTEMPT_FOR_FATAL_SENSOR_SWITCHING : MAX_INTERNAL_RECOVERY_ATTEMPTS;
+		if (ctx->try_recovery_cnt < max_recovery_cnt) {
+#else
 		if (ctx->try_recovery_cnt < MAX_INTERNAL_RECOVERY_ATTEMPTS) {
+#endif
 			error_event_data.try_internal_recovery = true;
 
 			if (!atomic_read(&ctx->overflow_pending))

@@ -574,6 +574,9 @@ registerPeripheralCBFnPtr ResourceManager::mRegisterPeripheralCb = nullptr;
 deregisterPeripheralCBFnPtr ResourceManager::mDeregisterPeripheralCb = nullptr;
 #define PRPHRL_REGSTR_RETRY_COUNT 10
 #endif
+#ifdef SEC_AUDIO_INTERPRETER_MODE
+int ResourceManager::interpreter_mode = 0;
+#endif
 //TODO:Needs to define below APIs so that functionality won't break
 #ifdef FEATURE_IPQ_OPENWRT
 int str_parms_get_str(struct str_parms *str_parms, const char *key,
@@ -10393,6 +10396,22 @@ int ResourceManager::setParameter(uint32_t param_id, void *param_payload,
             } else {
                 PAL_ERR(LOG_TAG, "Incorrect size : expected (%zu), received(%zu)",
                         sizeof(pal_param_amp_ssrm_t), payload_size);
+                status = -EINVAL;
+                goto exit;
+            }
+        }
+        break;
+#endif
+#ifdef SEC_AUDIO_INTERPRETER_MODE
+        case PAL_PARAM_ID_INTERPRETER_MODE:
+        {
+            pal_param_interpreter_mode_t *param_interpreter_mode =
+                                   (pal_param_interpreter_mode_t*) param_payload;
+            if (payload_size == sizeof(pal_param_interpreter_mode_t)) {
+                interpreter_mode = param_interpreter_mode->mode;
+            } else {
+                PAL_ERR(LOG_TAG, "Incorrect size : expected (%zu), received(%zu)",
+                        sizeof(pal_param_interpreter_mode_t), payload_size);
                 status = -EINVAL;
                 goto exit;
             }

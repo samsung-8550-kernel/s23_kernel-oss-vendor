@@ -14,6 +14,9 @@
 #include "cam_packet_util.h"
 #include "cam_req_mgr_dev.h"
 #include "cam_hw_bigdata.h"
+#if defined(CONFIG_SEC_KUNIT)
+#include "cam_sensor_util_unit_test.h"
+#endif
 
 #define CAM_SENSOR_PIPELINE_DELAY_MASK        0xFF
 #define CAM_SENSOR_MODESWITCH_DELAY_SHIFT     8
@@ -2544,6 +2547,9 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 		/* Match sensor ID */
 		rc = cam_sensor_match_id(s_ctrl);
 
+#if defined(CONFIG_SEC_KUNIT)
+		cam_sensor_hook_io_client(s_ctrl);
+#endif
 #if defined(CONFIG_SENSOR_RETENTION)
 		if (rc >= 0)
 			cam_sensor_write_normal_init(s_ctrl);
